@@ -1,0 +1,48 @@
+name: 'GitOps Deploy Tag Action'
+description: 'Updates image tag in target file'
+
+inputs:
+  gitops-repo:
+    description: 'GitOps repo to be updated'
+    required: true
+    default: 'demo-dev-applications'  # Adjust to your repository name
+
+  target-file:
+    description: 'Target YAML file to replace tag'
+    required: true
+
+  docker-image-tag:
+    description: 'Docker image tag'
+    required: true
+    default: ${GITHUB_SHA::7}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout GitOps
+      run: |
+        echo "Checking out ${GITHUB_SERVER_URL}/${{ inputs.gitops-repo }}.git"
+        rm -rf ./gitops_tmp
+        git clone --depth 1 --branch develop --single-branch https://x-access-token:${DEPLOY_TOKEN}@github.com/${{ inputs.gitops-repo }}.git ./gitops_tmp
+        cd ./gitops_tmp
+        git branch -a
+        git checkout develop
+      shell: bash
+
+    - name: Update image tag
+      working-directory: ./gitops_tmp
+      run: |
+        echo "Setting \"${{ inputs.docker-image-tag }}\" tag in \"${{ inputs.target-file }}\""
+        sed -i 's/tag: .*$/tag: "'${{ inputs.docker-image-tag }}'"/g' ${{ inputs.target-file }}
+      shell: bash
+
+    - name: Push changes to GitOps
+      working-directory: ./gitops_tmp
+      run: |
+        echo "Pushing changes to ${{ inputs.gitops-repo }}"
+        git config user.name "GitHub Actions"
+        git config user.email "ga-deployer@tietoevry.com"
+        git add .
+        git commit -m "Deploy \"${{ inputs.docker-image-tag }}\" tag into ${{ inputs.target-file }}"
+        git push -u origin develop
+      shell: bash
