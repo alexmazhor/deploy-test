@@ -26,7 +26,7 @@ runs:
         git clone --depth 1 --branch test --single-branch https://x-access-token:${DEPLOY_TOKEN}@github.com/${{ inputs.gitops-repo }}.git ./gitops_tmp
         cd ./gitops_tmp
         git branch -a
-        git checkout test
+        git checkout production
       shell: bash
 
     - name: Update image tag
@@ -44,5 +44,5 @@ runs:
         git config user.email "ga-deployer@tietoevry.com"
         git add .
         git commit -m "Deploy \"${{ inputs.docker-image-tag }}\" tag into ${{ inputs.target-file }}"
-        git push -u origin test
+        git push -u origin tproduction
       shell: bash
